@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import RequirementInput from './components/RequirementInput';
+import RequirementInput from "./components/RequirementInputs";
 import AnalyzedRequirementDisplay from './components/AnalyzedRequirementDisplay';
 import TestCaseOutput from './components/TestCaseOutput';
 import IntegrationActions from './components/IntegrationActions';
 import StepCard from './components/StepCard';
 import Spinner from './components/Spinner';
-import { WORKFLOW_STEPS } from './constants';
+import { WORKFLOW_STEPS } from './constant';
 import { analyzeRequirement, generateTestCases } from './services/geminiService';
 import { exportToJira, JiraIntegrationResult } from './services/jiraService';
 import { exportToAzureDevOps, AzureDevOpsIntegrationResult } from './services/azureDevOpsService';
-import type { AnalyzedRequirement, TestCase } from './types';
+import type { AnalyzedRequirement, TestCase } from './type';
 import { saveToHistory, HistoryItem } from './services/historyService';
 import HistoryPanel from './components/HistoryPanel';
 

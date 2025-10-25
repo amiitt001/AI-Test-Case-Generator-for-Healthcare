@@ -1,8 +1,20 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import type { AnalyzedRequirement, TestCase } from '../types';
+import { GoogleGenerativeAI as GenAI } from '@google/generative-ai';
 
-// FIX: Initialize GoogleGenAI with apiKey from process.env.API_KEY directly, removing the warning and fallback key.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Define Type enum locally since it's not exported by the package
+enum Type {
+    OBJECT = "object",
+    STRING = "string",
+    ARRAY = "array",
+    INTEGER = "integer"
+}
+import type { AnalyzedRequirement, TestCase } from '../type';
+
+// FIX: Pass apiKey and httpOptions in ONE configuration object
+const ai = new GenAI({
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+  httpOptions: { apiVersion: 'v1' },
+});
+// --- Your Schemas (no changes needed) ---
 
 const requirementSchema = {
     type: Type.OBJECT,
@@ -59,41 +71,57 @@ const testCasesSchema = {
     items: testCaseSchema
 };
 
+
+// --- Corrected Functions ---
+
 export const analyzeRequirement = async (requirementText: string): Promise<AnalyzedRequirement> => {
-    const prompt = `Analyze the following healthcare software requirement. Extract key information and structure it according to the provided JSON schema. The requirement is: "${requirementText}"`;
+    // FIX: Modified prompt to ask for JSON only
+    const prompt = `Analyze the following healthcare software requirement. Extract key information and structure it ONLY according to this JSON schema: ${JSON.stringify(requirementSchema)}. 
     
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: requirementSchema,
-            },
-        });
-        
-        const jsonString = response.text;
-        return JSON.parse(jsonString) as AnalyzedRequirement;
-    } catch (error) {
-        console.error("Error analyzing requirement with Gemini:", error);
-        throw new Error("Failed to analyze requirement. Please check the console for details.");
-    }
+    Respond with ONLY the raw JSON object. Do not add \`\`\`json markdown or any explanatory text.
+    
+    The requirement is: "${requirementText}"`;
+    
+  try {
+    // FIX: Use the stable 'gemini-1.5-flash' model
+    const model = ai.getGenerativeModel({
+      model: "gemini-1.5-flash"
+    });
+
+    // FIX: Removed the generationConfig to avoid the v1beta API
+    const response = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+
+    const jsonString = response.response.text();
+    return JSON.parse(jsonString) as AnalyzedRequirement;
+
+  } catch (error) {
+    console.error("Error analyzing requirement with Gemini:", error);
+    throw new Error("Failed to analyze requirement. Please check the console for details.");
+  }
 };
 
 export const generateTestCases = async (analyzedRequirement: AnalyzedRequirement): Promise<TestCase[]> => {
-    const prompt = `Based on the following analyzed healthcare software requirement, generate a comprehensive set of structured test cases. Ensure you cover various scenarios (positive, negative, boundary). The analyzed requirement is: ${JSON.stringify(analyzedRequirement, null, 2)}`;
+    // FIX: Modified prompt to ask for JSON only
+    const prompt = `Based on the following analyzed healthcare software requirement, generate a comprehensive set of structured test cases (at least 3) ONLY according to this JSON schema: ${JSON.stringify(testCasesSchema)}.
+    
+    Respond with ONLY the raw JSON array. Do not add \`\`\`json markdown or any explanatory text.
+    
+    The analyzed requirement is: ${JSON.stringify(analyzedRequirement, null, 2)}`;
 
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: testCasesSchema,
-            },
+        // FIX: Use the stable 'gemini-1.5-flash' model
+        const model = ai.getGenerativeModel({
+            model: "gemini-1.5-flash"
+        });
+
+        // FIX: Removed the generationConfig to avoid the v1beta API
+        const response = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
         });
         
-        const jsonString = response.text;
+        const jsonString = response.response.text();
         return JSON.parse(jsonString) as TestCase[];
     } catch (error) {
         console.error("Error generating test cases with Gemini:", error);
