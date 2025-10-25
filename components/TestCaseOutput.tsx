@@ -165,7 +165,7 @@ const TestCaseOutput: React.FC<TestCaseOutputProps> = ({ testCases, jiraResults,
                                 <div className="flex items-center gap-2 text-green-400 text-sm bg-green-900/50 p-2 rounded-md">
                                     <LinkIcon className="w-4 h-4" />
                                     <span>Azure DevOps: Successfully created work item <strong>#{adoResult.workItemId}</strong></span>
-                                d</div>
+                                </div>
                             )}
                             {adoResult.status === 'error' && (
                                 <div className="text-red-400 text-sm bg-red-900/50 p-2 rounded-md">
